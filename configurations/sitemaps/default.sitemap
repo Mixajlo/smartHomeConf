@@ -1,0 +1,6 @@
+sitemap default label="Main Menu"
+{
+	Frame label="My First Sensor" {
+		Text item=DemoWithMqtt
+	}
+}
