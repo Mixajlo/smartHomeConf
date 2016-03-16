@@ -1,0 +1,42 @@
+10.1.3.71 moe
+10.1.3.72 feit
+
+TODO
+buy arduino and shields
+
+Tasks
+#install raspbian on both raspis
+#install openhab on both
+#set mqtt on both raspis
+#set up both raspis to communicate through mqtt
+## mosquitto_pub -t home/temperature -m 26
+#install python gpio libs on both raspis (sudo apt-get install python-dev python-rpi.gpio) https://learn.sparkfun.com/tutorials/raspberry-gpio/all
+implement i2c binding
+#install arduino sdk
+provide sw for arduino
+--#temperature, #pressure, light, gas, (optionally) rotary encoder
+connect sensors to raspi
+--relays, (optionally) rotary encoder
+python scripts for controlling gpio pins on raspi
+connect sensors to arduino
+--#temperature, #pressure, light, gas, (optionally) rotary encoder, esp8266
+arduino mqtt to broker on raspis
+
+
+
+
+
+buy arduino, nodeMCU, esp8266, nRFM modules(nRF24L01+)
+
+
+
+
+
+connect relays to raspberry and control them via python scripts
+
+
+
+http://openmicros.org/index.php/articles/94-ciseco-product-documentation/raspberry-pi/218-2-raspberry-pi-gpio-inputs-in-python
+https://www.cl.cam.ac.uk/projects/raspberrypi/tutorials/temperature/
+https://sourceforge.net/p/raspberry-gpio-python/wiki/BasicUsage/
+https://learn.sparkfun.com/tutorials/raspberry-gpio/all
