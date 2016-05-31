@@ -1,0 +1,11 @@
+sitemap home label="Home"
+{
+        Frame label="Raspberry Pi relay #1"
+                {
+                        Switch item=RasRelay1
+                }
+        Frame label="Raspberry Pi relay #2"
+                {
+                        Switch item=RasRelay2
+                }
+}

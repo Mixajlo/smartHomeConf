@@ -1,0 +1,2 @@
+Switch RasRelay1 "ΠελεΌ 1" { gpio="pin:18 activelow:yes" }
+Switch RasRelay2 "ΠελεΌ 2" { gpio="pin:23 activelow:yes" }

@@ -4,4 +4,4 @@ Group gGroundFloor (All)
 Group GF_Living "Living Room" <video> (gGroundFloor)
 
 Number DemoWithMqtt "Температура [%.1f °C]" <temperature> (GF_Living) {mqtt="<[mymosquitto:home/temperature:state:default]"}
-
+Number Temperature "Температура [%.1f °C]" <temperature> (GF_Living) {mqtt="<[mymosquitto:home/temperature/1:state:default]"}
