@@ -1,2 +1,22 @@
-Switch RasRelay1 "Ðåëå¼ 1" { gpio="pin:18 activelow:yes" }
-Switch RasRelay2 "Ðåëå¼ 2" { gpio="pin:23 activelow:yes" }
+Switch RasRelay1 "Relay 1" { gpio="pin:18 activelow:yes" }
+Switch RasRelay2 "Relay 2" { gpio="pin:23 activelow:yes" }
+Number DemoWithMqtt "DemoWithMqtt" {mqtt="<[mymosquitto:home/temperature/test:state:default]"}
+
+Group All
+
+Group Weather 	(All)
+Group Relays 	(All)
+
+Group Relays_Chart (Relays)
+Switch RasRelay1 "Relay 1" (Relays_Chart) { gpio="pin:18 activelow:yes" }
+Switch RasRelay2 "Relay 2" (Relays_Chart) { gpio="pin:23 activelow:yes" }
+Number DemoWithMqtt "Temperature [%.2f C]" <temperature> (Weather_Chart) {mqtt="<[mymosquitto:home/temperature/test:state:default]"}
+
+Group Weather_Chart													(Weather)
+Number Weather_Temperature 		"Outside Temperature [%.1f Â°C]"	<temperature> (Weather_Chart) { http="<[http://weather.yahooapis.com/forecastrss?w=638242&u=c:60000:XSLT(yahoo_weather_temperature.xsl)]" }
+Number Weather_Humidity 		"Outside Humidity [%.1f %%]"	<temperature> (Weather) { http="<[http://weather.yahooapis.com/forecastrss?w=638242&u=c:60000:XSLT(yahoo_weather_humidity.xsl)]" }
+Number Weather_Humidex			"Humidex [SCALE(humidex.scale):%s]" 			(Weather)
+Number Weather_Temp_Max 		"Todays Maximum [%.1f Â°C]"	<temperature> (Weather_Chart)
+Number Weather_Temp_Min 		"Todays Minimum [%.1f Â°C]"	<temperature> (Weather_Chart)
+Number Weather_Chart_Period		"Chart Period"
+DateTime Weather_LastUpdate		"Last Update [%1$ta %1$tR]"	<clock>

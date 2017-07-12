@@ -1,0 +1,114 @@
+import org.openhab.core.library.types.DecimalType
+
+rule "Raise Alert Light"
+	when
+		Item DemoWithMqtt received update
+	then
+		logInfo( "FILE", "Activating alert lights." )
+		sendCommand(RasRelay1, OFF)
+		Thread::sleep(1000)
+		sendCommand(RasRelay1, ON)
+		Thread::sleep(1000)
+		sendCommand(RasRelay1, OFF)
+		Thread::sleep(1000)
+		sendCommand(RasRelay1, ON)
+end
+
+rule "Raise Alert Light if temp above 30 degrees"
+	when
+		Item DemoWithMqtt received update
+	then
+		if (DemoWithMqtt.state instanceof DecimalType) {
+			logInfo( "FILE", "Type is DecimalType" )
+			if (DemoWithMqtt.state > 30) {
+				logInfo( "FILE", "Temperature above 30 degrees. ALERT." )
+				RasRelay2.sendCommand(if(RasRelay2.state != OFF) OFF else ON)
+				Thread::sleep(1000)
+				RasRelay2.sendCommand(if(RasRelay2.state != ON) ON else OFF)
+				Thread::sleep(1000)
+				RasRelay2.sendCommand(if(RasRelay2.state != ON) ON else OFF)
+				Thread::sleep(1000)
+				RasRelay2.sendCommand(if(RasRelay2.state != ON) ON else OFF)
+				Thread::sleep(1000)
+				RasRelay2.sendCommand(if(RasRelay2.state != ON) ON else OFF)
+			}
+		} else {
+			logInfo( "FILE", "Type is NOT DecimalType" )
+		}
+end
+
+rule "print when ntc is on"
+	when
+		Item ntc received command ON
+	then
+		logInfo( "FILE", "NTC is on." )
+end
+
+rule "generate data 1"
+	when
+		Time cron "0/15 0/45 * * * ?"
+	then
+		logInfo( "FILE", "Generating data is on. 1" )
+		RasRelay1.sendCommand(if(RasRelay1.state != OFF) OFF else ON)
+end
+
+rule "generate data 2"
+	when
+		Time cron "10 0/5 * * * ?"
+	then
+		logInfo( "FILE", "Generating data is on. 2" )
+		RasRelay2.sendCommand(if(RasRelay2.state != OFF) OFF else ON)
+end
+
+rule "Buzz if temp above 30 degrees"
+    when
+        Item DemoWithMqtt received update
+    then
+        if (DemoWithMqtt.state > 30) {
+            if (Buzz.state == OFF) {
+                logInfo( "FILE", "Temperature is high. Sounding alarm" )
+                Buzz.sendCommand(ON)
+            } else {
+                logInfo( "FILE", "Temperature is still high.")
+			}
+        }
+end
+
+rule "Turn off Buzz if temp below 30 degrees"
+    when
+        Item DemoWithMqtt received update
+    then
+        if (DemoWithMqtt.state <= 30) {
+            if (Buzz.state == ON) {
+                logInfo( "FILE", "Temperature is back to normal. Turn of alarm" )
+                Buzz.sendCommand(OFF)
+            } else {
+                logInfo( "FILE", "Temperature is normal" )
+            }
+        }
+end
+
+rule "Buzz if ntc is opened"
+        when
+                Item NTC changed from CLOSED to OPEN
+        then
+                logInfo( "FILE", "The temperature is back to normal. Turning off the alarm." )
+                Buzz.sendCommand(OFF)
+end
+
+rule "Turn off Buzz if ntc is closed"
+        when
+                Item NTC changed from CLOSED to OPEN
+        then
+                logInfo( "FILE", "The temperature is very high. Will sound alarm." )
+                Buzz.sendCommand(ON)
+end
+
+rule "Beep if motion detected"
+        when
+                Item PIR changed from CLOSED to OPEN
+        then
+                Buzz.sendCommand(ON)
+                Thread::sleep(500)
+                Buzz.sendCommand(OFF)
+end

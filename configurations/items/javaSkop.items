@@ -1,0 +1,1 @@
+Switch RasRelay1 "Relay 1" { gpio="pin:18 activelow:yes" }
