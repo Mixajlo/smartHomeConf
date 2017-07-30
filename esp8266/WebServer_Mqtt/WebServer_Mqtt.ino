@@ -10,11 +10,11 @@
 #define ONE_BUTTON
 
 #ifdef ONE_BUTTON
-#define relay1Pin 2
-#define buttonPin 0
+#define RELAY_1_PIN 2
+#define BUTTON_PIN 0
 #else
-#define relay1Pin 2
-#define relay2Pin 0
+#define RELAY_1_PIN 2
+#define RELAY_2_PIN 0
 #endif
 
 
@@ -51,9 +51,9 @@ const char* password = "PASSWORD";
    Setup the "in" and "out" topics for mqtt
 */
 #ifdef ENABLE_MQTT
-const char* mqtt_server = "192.168.xxx.xxx";
 const char* inTopic = "topic/in";
 const char* outTopic = "topic/out";
+const char* mqtt_server = "192.168.xxx.xxx";
 #endif
 
 /*
@@ -75,34 +75,24 @@ PubSubClient mqttClient(espClient);
 Bounce debouncer = Bounce();
 #endif
 
-int button_pin = 0;
 bool relay1State = LOW;
 bool relay2State = LOW;
 
-void setup() {
-  EEPROM.begin(512);              // Begin eeprom to store on/off state
-  setupPins();
-  relay1State = EEPROM.read(0);
-  digitalWrite(relay1Pin, relay1State);
-
-  Serial.begin(115200);
-  setupHttpServer();
-  setup_wifi();                   // Connect to wifi
-#ifdef ENABLE_MQTT
-  mqttClient.setServer(mqtt_server, 1883);
-  mqttClient.setCallback(callback);
+void setupPins() {
+#ifdef ONE_BUTTON
+  pinMode(BUTTON_PIN, INPUT);     // Initialize the button pin as an input
+  pinMode(RELAY_1_PIN, OUTPUT);     // Initialize the relay 1 pin as an output
+  debouncer.attach(BUTTON_PIN);   // Use the bounce2 library to debounce the built in button
+  debouncer.interval(50);         // Input must be low for 50 ms
+#else
+  pinMode(RELAY_1_PIN, OUTPUT);     // Initialize the relay 1 pin as an output
+  pinMode(RELAY_2_PIN, OUTPUT);     // Initialize the relay 2 pin as an output
 #endif
 }
 
-void setupPins() {
-#ifdef ONE_BUTTON
-  pinMode(button_pin, INPUT);     // Initialize the button pin as an input
-  pinMode(relay1Pin, OUTPUT);     // Initialize the relay 1 pin as an output
-  debouncer.attach(button_pin);   // Use the bounce2 library to debounce the built in button
-  debouncer.interval(50);         // Input must be low for 50 ms
-#else
-  pinMode(relay1Pin, OUTPUT);     // Initialize the relay 1 pin as an output
-  pinMode(relay2Pin, OUTPUT);     // Initialize the relay 2 pin as an output
+void publishMsg(const char* topic, char* msg) {
+#ifdef ENABLE_MQTT
+  mqttClient.publish(topic, msg);
 #endif
 }
 
@@ -125,74 +115,32 @@ void setupHttpServer() {
 
   server.on("/relay1On", []() {
     server.send(200, "text/html", webPage);
-    digitalWrite(relay1Pin, HIGH);
+    digitalWrite(RELAY_1_PIN, HIGH);
     publishMsg(outTopic, "1");
     delay(1000);
   });
   server.on("/relay1Off", []() {
     server.send(200, "text/html", webPage);
-    digitalWrite(relay1Pin, LOW);
+    digitalWrite(RELAY_1_PIN, LOW);
     publishMsg(outTopic, "0");
     delay(1000);
   });
 #ifndef ONE_BUTTON
   server.on("/relay2On", []() {
     server.send(200, "text/html", webPage);
-    digitalWrite(relay2Pin, HIGH);
+    digitalWrite(RELAY_2_PIN, HIGH);
     publishMsg(outTopic, "1");
     delay(1000);
   });
   server.on("/relay2Off", []() {
     server.send(200, "text/html", webPage);
-    digitalWrite(relay2Pin, LOW);
+    digitalWrite(RELAY_2_PIN, LOW);
     publishMsg(outTopic, "0");
     delay(1000);
   });
 #endif
   server.begin();
   Serial.println("HTTP server set up");
-#endif
-}
-
-void loop() {
-#ifdef ENABLE_MQTT
-  if (!mqttClient.connected()) {
-    reconnect();
-  }
-  mqttClient.loop();
-#endif
-  extButton();
-#ifdef SETUP_HTTP_SERVER
-  server.handleClient();
-#endif
-}
-
-void setup_wifi() {
-  delay(10);
-  // We start by connecting to a WiFi network
-  Serial.println();
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
-
-  WiFi.begin(ssid, password);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    for (int i = 0; i < 500; i++) {
-      extButton();
-      delay(1);
-    }
-    Serial.print(".");
-  }
-
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
-}
-
-void publishMsg(const char* topic, char* msg) {
-#ifdef ENABLE_MQTT
-  mqttClient.publish(topic, msg);
 #endif
 }
 
@@ -208,25 +156,48 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
   // Only "0", "1" and "2" are valid data
   if ((char)payload[0] == '0') {
-    digitalWrite(relay1Pin, LOW);
-    Serial.println("relay1Pin -> LOW");
+    digitalWrite(RELAY_1_PIN, LOW);
+    Serial.println("RELAY_1_PIN -> LOW");
     relay1State = LOW;
     EEPROM.write(0, relay1State);
     EEPROM.commit();
   } else if ((char)payload[0] == '1') {
-    digitalWrite(relay1Pin, HIGH);
-    Serial.println("relay1Pin -> HIGH");
+    digitalWrite(RELAY_1_PIN, HIGH);
+    Serial.println("RELAY_1_PIN -> HIGH");
     relay1State = HIGH;
     EEPROM.write(0, relay1State);
     EEPROM.commit();
   } else if ((char)payload[0] == '2') {
     relay1State = !relay1State;
-    digitalWrite(relay1Pin, relay1State);
-    Serial.print("relay1Pin -> switched to ");
+    digitalWrite(RELAY_1_PIN, relay1State);
+    Serial.print("RELAY_1_PIN -> switched to ");
     Serial.println(relay1State);
     EEPROM.write(0, relay1State);
     EEPROM.commit();
   }
+}
+
+void extButton() {
+#ifdef ONE_BUTTON
+  debouncer.update();
+
+  // Call code if Bounce fell (transition from HIGH to LOW) :
+  if ( debouncer.fell() ) {
+    Serial.println("Debouncer fell");
+    // Toggle relay state :
+    relay1State = !relay1State;
+    digitalWrite(RELAY_1_PIN, relay1State);
+    EEPROM.write(0, relay1State);    // Write state to EEPROM
+#ifdef ENABLE_MQTT
+    if (relay1State == 1) {
+      mqttClient.publish(outTopic, "1");
+    }
+    else if (relay1State == 0) {
+      mqttClient.publish(outTopic, "0");
+    }
+#endif
+  }
+#endif
 }
 
 void reconnect() {
@@ -254,25 +225,53 @@ void reconnect() {
 }
 #endif
 
-void extButton() {
-#ifdef ONE_BUTTON
-  debouncer.update();
+void setup_wifi() {
+  delay(10);
+  // We start by connecting to a WiFi network
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
 
-  // Call code if Bounce fell (transition from HIGH to LOW) :
-  if ( debouncer.fell() ) {
-    Serial.println("Debouncer fell");
-    // Toggle relay state :
-    relay1State = !relay1State;
-    digitalWrite(relay1_pin, relay1State);
-    EEPROM.write(0, relay1State);    // Write state to EEPROM
-#ifdef ENABLE_MQTT
-    if (relay1State == 1) {
-      mqttClient.publish(outTopic, "1");
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    for (int i = 0; i < 500; i++) {
+      extButton();
+      delay(1);
     }
-    else if (relay1State == 0) {
-      mqttClient.publish(outTopic, "0");
-    }
-#endif
+    Serial.print(".");
   }
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+}
+
+void setup() {
+  EEPROM.begin(512);              // Begin eeprom to store on/off state
+  setupPins();
+  relay1State = EEPROM.read(0);
+  digitalWrite(RELAY_1_PIN, relay1State);
+
+  Serial.begin(115200);
+  setupHttpServer();
+  setup_wifi();                   // Connect to wifi
+#ifdef ENABLE_MQTT
+  mqttClient.setServer(mqtt_server, 1883);
+  mqttClient.setCallback(callback);
+#endif
+}
+
+void loop() {
+#ifdef ENABLE_MQTT
+  if (!mqttClient.connected()) {
+    reconnect();
+  }
+  mqttClient.loop();
+#endif
+  extButton();
+#ifdef SETUP_HTTP_SERVER
+  server.handleClient();
 #endif
 }
